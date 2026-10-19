@@ -1,0 +1,14 @@
+{
+  "name": "工作台",
+  "short_name": "工作台",
+  "description": "随手记工作内容，周报不漏项",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f6f8",
+  "theme_color": "#f5f6f8",
+  "icons": [
+    { "src": "./icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
