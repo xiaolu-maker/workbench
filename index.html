@@ -121,7 +121,13 @@
   .card.open .card-body{display:block;}
   .entries{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px;}
   .entries li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;line-height:1.55;}
-  .entries li .txt{flex:1;white-space:pre-wrap;word-break:break-word;}
+  .entries li .txt{flex:1;white-space:pre-wrap;word-break:break-word;cursor:pointer;
+    padding:2px 6px;margin:-2px -6px;border-radius:8px;transition:background .15s;}
+  .entries li .txt:hover{background:#f2f4f7;}
+  .entries li .txt:active{background:#e9ecf1;}
+  .entries li .edit-inp{flex:1;min-width:0;width:100%;font-family:inherit;font-size:14.5px;line-height:1.55;
+    color:var(--ink);background:#fff;border:1.5px solid var(--accent);border-radius:9px;
+    padding:5px 9px;margin:-6px 0;outline:none;box-shadow:0 0 0 3px var(--accent-soft);}
   .entries li .bullet{flex:none;width:6px;height:6px;border-radius:50%;background:var(--line-strong);margin-top:9px;}
   .entries li .del{flex:none;border:0;background:transparent;color:var(--faint);cursor:pointer;padding:6px;border-radius:8px;line-height:0;transition:.15s;}
   .entries li .del:hover,.entries li .del:active{color:var(--danger);background:var(--danger-soft);}
@@ -500,7 +506,7 @@
     if(it.entries.length){
       body += '<ul class="entries">';
       it.entries.forEach(function(e){
-        body += '<li><span class="bullet"></span><span class="txt">'+esc(e.text)+'</span>'
+        body += '<li><span class="bullet"></span><span class="txt" data-eid="'+e.id+'" title="点一下就能改">'+esc(e.text)+'</span>'
               + '<button class="del" data-act="del-entry" data-eid="'+e.id+'" aria-label="删除这条">'
               + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
               + '</button></li>';
@@ -511,7 +517,7 @@
     }
     body += '<form class="addline"><input type="text" placeholder="＋ 记一句：项目名，干了啥…" autocomplete="off" enterkeyhint="done"><button type="submit">加入</button></form>';
     body += '<div class="card-foot">'
-          +   '<button class="linkbtn edit" data-act="edit-item">编辑</button>'
+          +   '<button class="linkbtn edit" data-act="edit-item">改项目</button>'
           +   (it.type !== 'misc' ? '<button class="linkbtn close" data-act="close-item">关闭项目（下次翻篇移除）</button>' : '')
           + '</div>';
 
@@ -533,6 +539,9 @@
     var id = art.dataset.id;
     var it = state.items.filter(function(x){ return x.id === id; })[0];
     if(!it) return;
+
+    var txtEl = e.target.closest('.txt');
+    if(txtEl && txtEl.dataset.eid){ startEditEntry(txtEl, it); return; }
 
     var delBtn = e.target.closest('[data-act="del-entry"]');
     if(delBtn){
@@ -574,6 +583,43 @@
       render();
     }
   });
+
+  /* ---------- 点文字就地编辑 ---------- */
+  function startEditEntry(txtEl, it){
+    var eid = txtEl.dataset.eid;
+    var ent = it.entries.filter(function(x){ return x.id === eid; })[0];
+    if(!ent) return;
+    /* 另一条还在编辑：先落定它（不重绘），免得互相打断 */
+    var prev = listEl.querySelector('input.edit-inp');
+    if(prev && prev._commit) prev._commit(true, false);
+
+    var inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'edit-inp';
+    inp.value = ent.text;
+    inp.setAttribute('autocomplete','off');
+    inp.setAttribute('enterkeyhint','done');
+
+    var done = false;
+    function commit(saveIt, doRender){
+      if(done) return; done = true;
+      var v = inp.value.trim();
+      if(saveIt && v){ ent.text = v; save(); }
+      if(doRender !== false) render();
+    }
+    inp._commit = commit;
+
+    inp.addEventListener('keydown', function(ev){
+      if(ev.key === 'Enter'){ ev.preventDefault(); commit(true); }
+      else if(ev.key === 'Escape'){ commit(false); }
+    });
+    /* 点别处 → 自动保存 */
+    inp.addEventListener('blur', function(){ setTimeout(function(){ commit(true); }, 0); });
+
+    txtEl.parentNode.replaceChild(inp, txtEl);
+    inp.focus();
+    try{ inp.setSelectionRange(inp.value.length, inp.value.length); }catch(e){}
+  }
 
   listEl.addEventListener('submit', function(e){
     var form = e.target.closest('form.addline');
