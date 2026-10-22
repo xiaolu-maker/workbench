@@ -631,7 +631,7 @@
     var input = form.querySelector('input');
     var text = input.value.trim();
     if(!text || !it) return;
-    it.entries.push({ id:uid(), text:text });
+    it.entries.push({ id:uid(), text:text, createdAt:new Date().toISOString() });
     open[id] = true;
     focusId = id;
     save(); render();
@@ -856,8 +856,12 @@
       deadline: (raw && raw.deadline) ? String(raw.deadline) : null,
       closed: !!(raw && raw.closed),
       entries: entries.map(function(e){
-        if(typeof e === 'string') return { id:uid(), text:e };
-        return { id:(e && e.id) || uid(), text:(e && e.text) ? String(e.text) : '' };
+        if(typeof e === 'string') return { id:uid(), text:e, createdAt:null };
+        return {
+          id:(e && e.id) || uid(),
+          text:(e && e.text) ? String(e.text) : '',
+          createdAt: (e && e.createdAt) ? String(e.createdAt) : null
+        };
       }).filter(function(e){ return e.text; })
     };
   }
